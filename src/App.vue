@@ -3,9 +3,28 @@
     <form @submit.prevent="SimulateSendFormulaire" class="demo">
 
       <div class="flex-row">
-        <DynamicSingleSelectorsInput :option="optionSelector" v-model:="formulaire.dynamicSingleInput" @change="SimulateChangeValuePatch">
+        <DynamicSingleSelectorsInput 
+          :option="optionSelector"
+          v-model="formulaire.dynamicMutlipleSelectorsInput"
+          :display="u => u ? `${u.name} (#${u.id})` : 'Choisir un utilisateur'"
+          @change="SimulateChangeValuePatch"
+          @confirm-change="SimulateChangeValuePatch"
+          >
           <option v-for="data in listUsers" :value="data"> {{ data.name }} </option>
         </DynamicSingleSelectorsInput>
+      </div>
+
+      <div class="flex-row">
+        <DynamicMutlipleSelectorsInput 
+          :option="optionMultipleSelector"
+          v-model="formulaire.dynamicMutlipleSelectorsInput"
+          :display="u => u ? `${u.name} (#${u.id})` : 'Choisir un utilisateur'"
+          @change="SimulateChangeValuePatch"
+          @confirm-change="SimulateChangeValuePatch"
+          >
+        </DynamicMutlipleSelectorsInput>
+
+        <p> {{ formulaire.dynamicMutlipleSelectorsInput }}</p>
       </div>
 
       <div>
@@ -41,6 +60,7 @@ import { usePopupStore } from './stores/PopupStore';
 import { storeToRefs } from 'pinia';
 import BasicTextPopup from './components/popup/BasicTextPopup.vue';
 import DynamicTextInput, { type DynamicTextInputEmits } from './components/inputs/DynamicTextInput.vue';
+import DynamicMutlipleSelectorsInput, { type DynamicMultipleSelectorInput } from './components/inputs/DynamicMutlipleSelectorsInput.vue';
 
 const popupStore = usePopupStore()
 const { togglePopup } = popupStore
@@ -49,7 +69,8 @@ const { componentToShow } = storeToRefs(popupStore)
 
 
 const formulaire = reactive({
-  dynamicSingleInput: { id: "", name: "" } as any,
+  dynamicSingleInput: null as User | null,
+  dynamicMutlipleSelectorsInput: [] as User[],
   dynamicTextInput: "",
   dynamicPriceInput: 0
 })
@@ -68,9 +89,20 @@ const listUsers: User[] = [
 ]
 
 const optionSelector: DynamicSingleSelectorInput = {
-  name: "Selector Name",
-  toggle: true,
-  key: "consultant"
+    name: 'Selector Name',
+    key: 'consultant',
+    toggle: true,
+    placeholder: 'Choisir un utilisateur',
+    labelProp: 'name'
+}
+
+const optionMultipleSelector: DynamicMultipleSelectorInput = { 
+  name: 'Multiple Selector',
+  key: 'localisation',
+  toggle: false,
+  placeholder: 'Choisir un ou plusieurs utilisateurs',
+  listData: listUsers,
+  labelProp: 'name'
 }
 
 const SimulateChangeValuePatch = (data: DynamicTextInputEmits, key: keyof DynamicTextInputEmits) => {

@@ -1,86 +1,119 @@
 <template>
+  <p
+    v-if="props.option.toggle && !isOpen"
+    class="display"
+    tabindex="0"
+    @dblclick="toggle"
+    @keydown.enter.prevent="toggle"
+  >
+    {{ displayText }}
+  </p>
 
-    <p v-if="!isToggle && option.toggle" class="disabled" type="text" @dblclick.left="ToggleInput" readonly> {{ option.visualise() }} </p>
-
-    <select v-else class="selected" :id="`id_${option.name}_selector`" 
-    :name="option.name" 
-    v-model="myModel"
-    :size="option.size" 
-    @change="onChange"
-    @keypress.enter="onConfirmChange">
-        <option value="" :disabled="option.disabled" > --- </option>
-        <slot />
-    </select>
-
+  <select
+    v-else
+    class="selected"
+    :id="`id_${props.option.name}_selector`"
+    :name="props.option.name"
+    v-model="model"
+    :size="props.option.size"
+    :disabled="props.option.disabled"
+    @change="emitChange"
+    @keypress.enter.prevent="confirmAndClose"
+  >
+    <option :value="null" disabled>
+      {{ props.option.placeholder ?? '---' }}
+    </option>
+    <slot />
+  </select>
 </template>
 
 <script lang="ts" setup>
-import { ref, type Reactive } from 'vue'
-
+import { ref, computed } from 'vue'
 
 export interface DynamicSingleSelectorInput {
-    name: string,
-    visualise: () => string,
-    key?: string,
-    size?: string,
-    toggle?: boolean
-    disabled?: boolean
+  name: string
+  key?: string
+  size?: number | string
+  toggle?: boolean
+  disabled?: boolean
+  placeholder?: string
+  labelProp?: string
 }
-
-const initialValue = ref<string | number>()
-const isToggle = ref<Boolean>(false)
-
-const myModel = defineModel<Reactive<any>>()
-
-initialValue.value = myModel.value
 
 const props = defineProps<{
-    option: DynamicSingleSelectorInput
+  option: DynamicSingleSelectorInput
+  display?: (value: any) => string
 }>()
+
+const model = defineModel<any>({ default: null })
+
+const isOpen = ref<boolean>(false)
+
+const toggle = () => { 
+    if (props.option.toggle !== false) isOpen.value = !isOpen.value 
+}
+
+const closeIfToggle = () => { 
+    if (props.option.toggle !== false) isOpen.value = false 
+}
 
 const emits = defineEmits<{
-    (e: 'change', id: any, key: string): void
+  (e: 'change', value: any, key: string): void
+  (e: 'confirmChange', value: any, key: string): void
 }>()
 
-const ToggleInput = () => {
-    isToggle.value = !isToggle.value
+const displayText = computed(() => {
+  if (!model.value) return props.option.placeholder ?? '—'
+
+  if (typeof props.display === 'function') 
+    return props.display(model.value)
+
+  if (props.option.labelProp && model.value?.[props.option.labelProp] != null)
+    return String(model.value[props.option.labelProp])
+
+  if (typeof model.value === 'string' || typeof model.value === 'number')
+    return String(model.value)
+
+  return props.option.placeholder ?? '—'
+})
+
+const emitChange = () => {
+  emits('change', model.value, props.option.key ?? 'N/A')
 }
 
-const onChange = () => {
-    if (myModel.value === undefined) return
-
-    console.log("Value changed", myModel.value)
-
+const emitConfirmChange = () => {
+  emits('confirmChange', model.value, props.option.key ?? 'N/A')
 }
 
-const onConfirmChange = () => {
-    console.log("Value confirmed", myModel.value)
-    emits('change', myModel.value as string, props.option.key ?? "N/A")
-    ToggleInput()
-}
 
+
+const confirmAndClose = () => {
+  emitConfirmChange()
+  closeIfToggle()
+}
 </script>
 
-<style lang="css" scoped>
+<style scoped>
 
 .selected {
-    height: fit-content;
-    padding: .5em 1em;
+  height: fit-content;
+  padding: .5em 1em;
 }
 
-.active, .disabled {
-    color: black;
-    width: 100%;
-    height: fit-content;
-    max-width: 200px;
-    box-sizing: border-box;
-    padding: 10px;
-    font-size: large;
-    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+.display {
+  color: black;
+  width: 100%;
+  max-width: 260px;
+  box-sizing: border-box;
+  padding: 10px;
+  font-size: large;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  border: 1px dashed transparent;
 }
 
-.disabled:hover {
-    cursor: cell;
+.display:hover { 
+    cursor: cell; 
+    border-color: #ddd; 
 }
 
 </style>
