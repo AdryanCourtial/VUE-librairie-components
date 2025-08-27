@@ -24,7 +24,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 export interface DynamicMultipleSelectorInput {
   name: string
@@ -63,6 +63,10 @@ const searchFiltered = computed(() => {
 
 const handleIfOpen = computed(() => {
     return isOpen.value
+})
+
+watch(search, () => {
+    if (!isOpen.value) isOpen.value = true
 })
 
 const getKey = (v: any) => typeof v === 'object' && v !== null ? v.id ?? JSON.stringify(v) : v
